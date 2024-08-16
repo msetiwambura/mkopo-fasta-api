@@ -3,7 +3,6 @@ package controllers
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
 	"loanapi/configs"
 	"loanapi/models"
 	"loanapi/responses"
@@ -14,21 +13,24 @@ import (
 )
 
 func CreateLoan(ctx *gin.Context) {
-	body, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
-		return
-	}
-
-	// Print the raw request body
-	fmt.Println("Request Body:", string(body))
 	var loan models.Loan
 	if err := ctx.ShouldBindJSON(&loan); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	configs.DB.Create(&loan)
-	ctx.JSON(http.StatusCreated, loan)
+
+	// Print the received loan object for debugging
+	fmt.Printf("Received Loan: %+v\n", loan)
+
+	// Assuming configs.DB is properly set up to interact with the database
+	if err := configs.DB.Create(&loan).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create loan"})
+		return
+	}
+
+	res := responses.CreateSuccessPostResponse("Success", "Request Processed Successfully", loan.ID)
+
+	ctx.JSON(http.StatusCreated, res)
 }
 
 // GetLoansByCustomerID Api to get loan history
